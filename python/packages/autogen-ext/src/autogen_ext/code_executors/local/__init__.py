@@ -344,7 +344,7 @@ $functions"""
                 return CommandLineCodeResult(
                     exit_code=1,
                     output="Filename is not in the workspace",
-                    code_file=None,
+                    code=code,
                 )
 
             # If no filename is found, create one
@@ -433,7 +433,7 @@ $functions"""
                 break
 
         if file_names:
-            with open(str(file_names[0]), "r") as code_file:
+            with file_names[0].open("r", encoding="utf-8") as code_file:
                 code = code_file.read()
         else:
             code = None
