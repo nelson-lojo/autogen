@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import warnings
+import tempfile
 from hashlib import sha256
 from pathlib import Path
 from string import Template
@@ -138,10 +139,12 @@ For example, if there was a function called `foo` you could import it by writing
 
 $functions"""
 
+    _TEMP_DIR_SENTINEL = object()
+
     def __init__(
         self,
         timeout: int = 60,
-        work_dir: Union[Path, str] = Path("."),
+        work_dir: Union[Path, str, Literal[_TEMP_DIR_SENTINEL]] = _TEMP_DIR_SENTINEL,
         functions: Sequence[
             Union[
                 FunctionWithRequirements[Any, A],
@@ -155,8 +158,13 @@ $functions"""
         if timeout < 1:
             raise ValueError("Timeout must be greater than or equal to 1.")
 
-        if isinstance(work_dir, str):
-            work_dir = Path(work_dir)
+        if work_dir is self._TEMP_DIR_SENTINEL:
+            self._temp_dir = tempfile.TemporaryDirectory()
+            work_dir = Path(self._temp_dir.name)
+        else:
+            if isinstance(work_dir, str):
+                work_dir = Path(work_dir)
+            logging.info("Files will not be deleted automatically.")
 
         if not functions_module.isidentifier():
             raise ValueError("Module name must be a valid Python identifier")

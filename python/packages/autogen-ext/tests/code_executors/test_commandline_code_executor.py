@@ -241,3 +241,36 @@ async def test_ps1_script(executor_and_temp_dir: ExecutorFixture) -> None:
     assert result.exit_code == 0
     assert "hello from powershell!" in result.output
     assert result.code_file is not None
+
+
+@pytest.mark.asyncio
+async def test_auto_cleanup_temp_files() -> None:
+    executor = LocalCommandLineCodeExecutor()
+    cancellation_token = CancellationToken()
+
+    code_blocks = [CodeBlock(code="import sys; print('hello world!')", language="python")]
+    code_result = await executor.execute_code_blocks(code_blocks, cancellation_token)
+    assert code_result.exit_code == 0
+    assert "hello world!" in code_result.output
+
+    temp_dir = executor.work_dir
+    assert temp_dir.exists()
+
+    del executor
+    assert not temp_dir.exists()
+
+
+@pytest.mark.asyncio
+async def test_no_auto_cleanup_specified_work_dir() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        executor = LocalCommandLineCodeExecutor(work_dir=temp_dir)
+        cancellation_token = CancellationToken()
+
+        code_blocks = [CodeBlock(code="import sys; print('hello world!')", language="python")]
+        code_result = await executor.execute_code_blocks(code_blocks, cancellation_token)
+        assert code_result.exit_code == 0
+        assert "hello world!" in code_result.output
+
+        assert Path(temp_dir).exists()
+
+    assert Path(temp_dir).exists()
