@@ -325,7 +325,7 @@ $functions"""
             if exit_code != 0:
                 break
 
-        code_file = files[0] if files else None
+        code_file = str(files[0]) if files else None
         return CommandLineCodeResult(exit_code=last_exit_code, output="".join(outputs), code_file=code_file)
 
     async def execute_code_blocks(

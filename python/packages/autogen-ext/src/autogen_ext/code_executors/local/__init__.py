@@ -432,7 +432,7 @@ $functions"""
             if exitcode != 0:
                 break
 
-        code_file = file_names[0] if file_names else None
+        code_file = str(file_names[0]) if file_names else None
         if self._delete_code_on_completion:
             self._tmp_work_dir.cleanup()
             code_file = None
