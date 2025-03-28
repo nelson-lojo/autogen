@@ -325,12 +325,8 @@ $functions"""
             if exit_code != 0:
                 break
 
-        if files:
-            with files[0].open("r", encoding="utf-8") as code_file:
-                code = code_file.read()
-        else:
-            code = None
-        return CommandLineCodeResult(exit_code=last_exit_code, output="".join(outputs), code=code)
+        code_file = files[0] if files else None
+        return CommandLineCodeResult(exit_code=last_exit_code, output="".join(outputs), code_file=code_file)
 
     async def execute_code_blocks(
         self, code_blocks: List[CodeBlock], cancellation_token: CancellationToken

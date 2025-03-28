@@ -344,7 +344,7 @@ $functions"""
                 return CommandLineCodeResult(
                     exit_code=1,
                     output="Filename is not in the workspace",
-                    code=code,
+                    code_file=None,
                 )
 
             # If no filename is found, create one
@@ -432,14 +432,11 @@ $functions"""
             if exitcode != 0:
                 break
 
-        if file_names:
-            with file_names[0].open("r", encoding="utf-8") as code_file:
-                code = code_file.read()
-        else:
-            code = None
+        code_file = file_names[0] if file_names else None
         if self._delete_code_on_completion:
             self._tmp_work_dir.cleanup()
-        return CommandLineCodeResult(exit_code=exitcode, output=logs_all, code=code)
+            code_file = None
+        return CommandLineCodeResult(exit_code=exitcode, output=logs_all, code_file=code_file)
 
     async def restart(self) -> None:
         """(Experimental) Restart the code executor."""

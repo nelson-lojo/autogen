@@ -13,7 +13,7 @@ from typing_extensions import ParamSpec
 class CommandLineCodeResult(CodeResult):
     """A code result class for command line code executor."""
 
-    code: Optional[str]
+    code_file: Optional[str]
 
 
 T = TypeVar("T")
