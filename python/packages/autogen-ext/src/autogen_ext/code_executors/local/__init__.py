@@ -139,12 +139,10 @@ For example, if there was a function called `foo` you could import it by writing
 
 $functions"""
 
-    _TEMP_DIR_SENTINEL = object()
-
     def __init__(
         self,
         timeout: int = 60,
-        work_dir: Union[Path, str, Literal[_TEMP_DIR_SENTINEL]] = _TEMP_DIR_SENTINEL,
+        work_dir: Union[Path, str, None] = None,
         functions: Sequence[
             Union[
                 FunctionWithRequirements[Any, A],
@@ -154,27 +152,31 @@ $functions"""
         ] = [],
         functions_module: str = "functions",
         virtual_env_context: Optional[SimpleNamespace] = None,
+        delete_code_on_completion: bool = True,
     ):
         if timeout < 1:
             raise ValueError("Timeout must be greater than or equal to 1.")
 
-        if work_dir is self._TEMP_DIR_SENTINEL:
-            self._temp_dir = tempfile.TemporaryDirectory()
-            work_dir = Path(self._temp_dir.name)
-        else:
-            if isinstance(work_dir, str):
-                work_dir = Path(work_dir)
-            logging.info("Files will not be deleted automatically.")
+        if isinstance(work_dir, str):
+            work_dir = Path(work_dir)
 
         if not functions_module.isidentifier():
             raise ValueError("Module name must be a valid Python identifier")
 
         self._functions_module = functions_module
 
-        work_dir.mkdir(exist_ok=True)
+        if work_dir is not None:
+            work_dir.mkdir(exist_ok=True)
+
+        if delete_code_on_completion:
+            self._temp_work_dir = tempfile.TemporaryDirectory(
+                prefix="autogen_cl_executor_", dir=work_dir
+            )
+
+        self._delete_code_on_completion = delete_code_on_completion
 
         self._timeout = timeout
-        self._work_dir: Path = work_dir
+        self._work_dir: Path = Path(self._temp_work_dir.name)
 
         self._functions = functions
         # Setup could take some time so we intentionally wait for the first code block to do it.
@@ -430,8 +432,14 @@ $functions"""
             if exitcode != 0:
                 break
 
-        code_file = str(file_names[0]) if file_names else None
-        return CommandLineCodeResult(exit_code=exitcode, output=logs_all, code_file=code_file)
+        if file_names:
+            with open(str(file_names[0]), "r") as code_file:
+                code = code_file.read()
+        else:
+            code = None
+        if self._delete_code_on_completion:
+            self._tmp_work_dir.cleanup()
+        return CommandLineCodeResult(exit_code=exitcode, output=logs_all, code=code)
 
     async def restart(self) -> None:
         """(Experimental) Restart the code executor."""
